@@ -1,24 +1,16 @@
 package com.roobit.android.restclient;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.Reader;
-import java.io.UnsupportedEncodingException;
+import android.net.Uri;
+import android.util.Log;
+import com.roobit.android.restclient.RestClient.Operation;
+
+import javax.net.ssl.*;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.Iterator;
 import java.util.Properties;
-
-import android.net.Uri;
-import android.util.Log;
-
-import com.roobit.android.restclient.RestClient.Operation;
 
 public class RestClientRequest {
 
@@ -27,29 +19,31 @@ public class RestClientRequest {
 	public enum StreamingMode { CHUNKED, FIXED };
 	static StreamingMode streamingMode = StreamingMode.CHUNKED;
 	
-	public static RestResult synchronousExecute(Operation op, Uri uri) {
-		return synchronousExecute(op, uri, null);
+	public static RestResult synchronousExecute(Operation op, Uri uri, boolean disableCertificateValidation) {
+		return synchronousExecute(op, uri, null, disableCertificateValidation);
 	}
 
-	public static RestResult synchronousExecute(Operation op, Uri uri, Properties httpHeaders) {
-		return synchronousExecute(op, uri, httpHeaders, null, null);
+	public static RestResult synchronousExecute(Operation op, Uri uri, Properties httpHeaders, boolean disableCertificateValidation) {
+		return synchronousExecute(op, uri, httpHeaders, null, null, disableCertificateValidation);
 	}
 
 	public static RestResult synchronousExecute(Operation op,
 			Uri uri, 
 			Properties httpHeaders,
 			Properties parameters,
-			ByteArrayOutputStream postData) {
+			ByteArrayOutputStream postData,
+			boolean disableCertificateValidation) {
 		
 		Log.d(TAG, "Executing " + op.toString() + " to " + uri.toString());
 		
 		streamingMode = (parameters == null && postData == null)  ? StreamingMode.CHUNKED : StreamingMode.FIXED;
 		
 		RestResult result = new RestResult();
-		HttpURLConnection urlConnection = null;
+		HttpsURLConnection urlConnection = null;
 		try {
-			urlConnection = (HttpURLConnection) new URL(uri.toString()).openConnection();
-			//setAuthentication(urlConnection, uri.getEncodedUserInfo());
+			urlConnection = (HttpsURLConnection) new URL(uri.toString()).openConnection();
+			if (disableCertificateValidation) disableCertificateValidation(urlConnection);
+			setAuthentication(urlConnection, uri.getEncodedUserInfo());
 			setRequestHeaders(urlConnection, httpHeaders);
 			setRequestParameters(urlConnection, parameters);
 			setRequestMethod(urlConnection, op, httpHeaders);
@@ -209,5 +203,35 @@ public class RestClientRequest {
 		} while (read >= 0);
 		
 		return sb.toString();
+	}
+
+	private static void disableCertificateValidation(HttpsURLConnection urlConnection) {
+		// Create a trust manager that does not validate certificate chains
+		final TrustManager[] trustAllCerts = new TrustManager[] {
+				new X509TrustManager() {
+					public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
+					public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) {}
+					public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+						return null;
+					}
+				}
+		};
+
+		// Install the all-trusting trust manager
+		try {
+			final SSLContext sc = SSLContext.getInstance("TLS");
+			sc.init(null, trustAllCerts, new java.security.SecureRandom());
+			urlConnection.setSSLSocketFactory(sc.getSocketFactory());
+
+			// Create and install all-trusting host name verifier
+			urlConnection.setHostnameVerifier(
+					new HostnameVerifier() {
+						public boolean verify(String hostname, SSLSession session) {
+							return true;
+						}
+					}
+			);
+		} catch (Exception e) {
+		}
 	}
 }

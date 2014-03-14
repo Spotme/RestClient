@@ -27,6 +27,7 @@ public class RestClient implements RestClientRequestListener {
 	ByteArrayOutputStream postData;
 	Operation operation;
 	OnCompletionListener completionListener;
+	boolean disableCertificateValidation;
 	
 	static RestClient instance;
 	
@@ -101,7 +102,7 @@ public class RestClient implements RestClientRequestListener {
 	 * @return the result of the request.
 	 */
 	public RestResult synchronousExecute() {
-		return RestClientRequest.synchronousExecute(getOperation(), buildUri(), httpHeaders, parameters, postData);
+		return RestClientRequest.synchronousExecute(getOperation(), buildUri(), httpHeaders, parameters, postData, disableCertificateValidation);
 	}
 
 
@@ -233,7 +234,11 @@ public class RestClient implements RestClientRequestListener {
 	private void setHttpHeaders(Properties httpHeaders) {
 		this.httpHeaders = httpHeaders;
 	}
-	
+
+	public void setDisableCertificateValidation(boolean disableCertificateValidation) {
+		this.disableCertificateValidation = disableCertificateValidation;
+	}
+
 	private void setParameters(Properties parameters) {
 		this.parameters = parameters;
 	}
