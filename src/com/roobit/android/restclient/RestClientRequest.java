@@ -39,10 +39,10 @@ public class RestClientRequest {
 		streamingMode = (parameters == null && postData == null)  ? StreamingMode.CHUNKED : StreamingMode.FIXED;
 		
 		RestResult result = new RestResult();
-		HttpsURLConnection urlConnection = null;
+		HttpURLConnection urlConnection = null;
 		try {
-			urlConnection = (HttpsURLConnection) new URL(uri.toString()).openConnection();
-			if (disableCertificateValidation) disableCertificateValidation(urlConnection);
+			urlConnection = (HttpURLConnection) new URL(uri.toString()).openConnection();
+			if (disableCertificateValidation && urlConnection instanceof HttpsURLConnection) disableCertificateValidation((HttpsURLConnection)urlConnection);
 			setAuthentication(urlConnection, uri.getEncodedUserInfo());
 			setRequestHeaders(urlConnection, httpHeaders);
 			setRequestParameters(urlConnection, parameters);

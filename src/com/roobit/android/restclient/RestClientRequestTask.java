@@ -27,7 +27,7 @@ public class RestClientRequestTask extends AsyncTask<Object, Void, RestResult> {
 		Properties httpHeaders = (Properties) args[2];
 		Properties parameters = (Properties) args[3];
 		ByteArrayOutputStream postData = (ByteArrayOutputStream) args[4];
-		return RestClientRequest.synchronousExecute(op, uri, httpHeaders, parameters, postData);
+		return RestClientRequest.synchronousExecute(op, uri, httpHeaders, parameters, postData, true);
 	}
 
 	
